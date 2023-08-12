@@ -11,3 +11,11 @@ canvas {
 
     cursor: none;
 }
+
+#ballCanvs {
+    z-index: 0;
+}
+
+#paddleCanvas {
+    z-index: 1;
+}
