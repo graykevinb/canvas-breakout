@@ -68,10 +68,12 @@ export class GameComponent implements AfterViewInit {
     if (paddleCtx && ballCtx) {
       paddleCtx.fillStyle = 'white';
       window.addEventListener("mousemove", (event) => this.updatePaddlePos(event, paddleCanvas, paddleCtx));
-      setInterval(() => this.updateBallPos(ballCanvas, ballCtx), 1);
-      //setInterval(() => requestAnimationFrame(() => this.updateBallPos(ballCanvas, ballCtx)));
+      //setInterval(() => this.updateBallPos(ballCanvas, ballCtx), 1);
+      window.requestAnimationFrame(() => this.updateBallPos(ballCanvas, ballCtx));
     }
   }
+
+  
 
   updateBallPos(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
     const radius = 20;
@@ -96,6 +98,7 @@ export class GameComponent implements AfterViewInit {
     this.ballY += this.ballYSpeed;
     context.arc(this.ballX, this.ballY, radius, 0, 2*Math.PI);
     context.fill()
+    window.requestAnimationFrame(() => this.updateBallPos(canvas, context));
   }
 
   updatePaddlePos(event: MouseEvent, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
