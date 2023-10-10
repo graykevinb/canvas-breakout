@@ -9,10 +9,14 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 export class GameComponent implements AfterViewInit {
 
   @ViewChild('pongCanvas', { static: false }) ballCanvasRef!: ElementRef;
+  pongCanvas: any = this.ballCanvasRef.nativeElement;
+
+  canvasWidth = this.pongCanvas.getBoundingClientRect().width;
+  canvasHeight = this.pongCanvas.getBoundingClientRect().height;
 
   PADDLE_HEIGHT = 20;
   PADDLE_WIDTH = 300;
-  PADDLE_Y = 0;
+  PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
   PADDLE_X = 0;
 
   ballX = 30;
@@ -21,48 +25,28 @@ export class GameComponent implements AfterViewInit {
   ballXSpeed = 10;
   ballYSpeed = 10;
 
-  canvasWidth = 0;
-  canvasHeight = 0;
-
-
   ngAfterViewInit(): void {
 
-    const pongCanvas: any = this.ballCanvasRef.nativeElement;
-
     const dpr = window.devicePixelRatio || 1;
-
-    const bsr = pongCanvas.webkitBackingStorePixelRatio || 
-      pongCanvas.mozBackingStorePixelRatio ||
-      pongCanvas.msBackingStorePixelRatio || 
-      pongCanvas.oBackingStorePixelRatio ||  
-      pongCanvas.backingStorePixelRatio || 1;
-    
-    const ratio = dpr / bsr;
-
-    this.canvasWidth = pongCanvas.getBoundingClientRect().width;
-    this.canvasHeight = pongCanvas.getBoundingClientRect().height;
   
-    pongCanvas.width = this.canvasWidth * ratio;
-    pongCanvas.height = this.canvasHeight * ratio;
+    this.pongCanvas.width = this.canvasWidth * dpr;
+    this.pongCanvas.height = this.canvasHeight * dpr;
 
-    const ballCtx: CanvasRenderingContext2D | null = pongCanvas.getContext('2d');
+    const ballCtx: CanvasRenderingContext2D | null = this.pongCanvas.getContext('2d');
 
-    ballCtx?.scale(ratio, ratio);
+    ballCtx?.scale(dpr, dpr);
 
-    pongCanvas.style.width = this.canvasWidth + 'px';
-    pongCanvas.style.height = this.canvasHeight + 'px';
-
-    this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
+    this.pongCanvas.style.width = this.canvasWidth + 'px';
+    this.pongCanvas.style.height = this.canvasHeight + 'px';
 
     if (ballCtx) {
       ballCtx.fillStyle = 'white';
       window.addEventListener("mousemove", (event) => this.updatePaddlePos(event));
-      window.requestAnimationFrame(() => this.updateGame(pongCanvas, ballCtx));
+      window.requestAnimationFrame(() => this.updateGame(this.pongCanvas, ballCtx));
     }
   }
 
   updateGame(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
-
     // Setup Canvas for drawing
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.beginPath();
