@@ -1,4 +1,6 @@
+import { NgIfContext } from '@angular/common';
 import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { throwError } from 'rxjs';
 
 @Component({
   selector: 'app-game',
@@ -11,24 +13,15 @@ export class GameComponent implements AfterViewInit {
   @ViewChild('pongCanvas', { static: false }) ballCanvasRef!: ElementRef;
   pongCanvas: any = undefined;
 
-  canvasWidth = 0
-  canvasHeight = 0
-
-  PADDLE_HEIGHT = 20;
-  PADDLE_WIDTH = 300;
-  PADDLE_Y = 0;
-  PADDLE_X = 0;
-
-  ballX = 0;
-  ballY = 0;
-
-  ballXSpeed = 10;
-  ballYSpeed = 10;
+  canvasWidth!: number;
+  canvasHeight!: number;
 
   GAMEOVER = false;
   WON = false;
 
   bricks!: Bricks;
+  paddle!: Paddle;
+  ball!: Ball;
 
   ngAfterViewInit(): void {
 
@@ -38,12 +31,11 @@ export class GameComponent implements AfterViewInit {
     this.canvasHeight = this.pongCanvas.getBoundingClientRect().height;
 
     this.bricks = new Bricks(3,10, this.canvasWidth);
-  
-    this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
 
-    this.ballX = this.canvasWidth/2;
-    this.ballY = this.canvasHeight/2;
-  
+
+    this.ball = new Ball(this.canvasWidth/2, this.canvasHeight/2);
+
+    this.paddle = new Paddle(this.canvasWidth/2, this.canvasHeight-Paddle.PADDLE_HEIGHT);
     const dpr = window.devicePixelRatio || 1;
   
     this.pongCanvas.width = this.canvasWidth * dpr;
@@ -69,17 +61,17 @@ export class GameComponent implements AfterViewInit {
     context.beginPath();
     context.fillStyle = 'white';
     if (!this.GAMEOVER && !this.bricks.empty()) {
-      console.log(this.bricks.empty());
-      const radius = 20;
-      this.updateBallPos(radius);
+
+
+      this.updateBallPos();
 
       let b_list: Array<Brick> = this.bricks.bricks;
       let i: any;
       for (i in b_list) {
         const brick = b_list[i];
-        let vector = brick.collide(this.ballX, this.ballY, radius);
-        this.ballXSpeed *= vector[0];
-        this.ballYSpeed *= vector[1];
+        let vector = brick.collide(this.ball.x, this.ball.y, this.ball.radius);
+        this.ball.xSpeed *= vector[0];
+        this.ball.ySpeed *= vector[1];
         if(!brick.broken) {
           brick.draw(context);
         } else {
@@ -87,10 +79,11 @@ export class GameComponent implements AfterViewInit {
         }
       }
       // Draw Ball
-      context.arc(this.ballX, this.ballY, radius, 0, 2*Math.PI);
+      this.ball.draw(context);
+      //context.arc(this.ball.x, this.ball.y, this.ball.radius, 0, 2*Math.PI);
 
       //Update paddle position
-      context.rect(this.PADDLE_X, this.PADDLE_Y, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+      this.paddle.draw(context);
       context.fill();
 
       window.requestAnimationFrame(() => this.updateGame(canvas, context));
@@ -105,26 +98,29 @@ export class GameComponent implements AfterViewInit {
     }
   }
 
-  private updateBallPos(radius: number) {
-    if ((this.ballY >= this.canvasHeight - this.PADDLE_HEIGHT - radius) && 
-        this.ballX >= this.PADDLE_X && 
-        this.ballX <= this.PADDLE_X + this.PADDLE_WIDTH) {
-      this.ballYSpeed = -this.ballYSpeed;
-    } else if (this.ballY + radius >= this.canvasHeight) {
-      this.ballXSpeed = 0;
-      this.ballYSpeed = 0;
+  private updateBallPos() {
+    const radius = this.ball.radius;
+
+    if ((this.ball.y >= this.paddle.y - Paddle.PADDLE_HEIGHT - 0.5*radius) && 
+        this.ball.x >= this.paddle.x && 
+        this.ball.x <= this.paddle.x + Paddle.PADDLE_WIDTH) {
+      //return
+      this.ball.ySpeed = -this.ball.ySpeed;
+    } else if (this.ball.y + radius >= this.canvasHeight) {
+      this.ball.xSpeed = 0;
+      this.ball.ySpeed = 0;
       this.GAMEOVER = true;
-    } else if (this.ballX + radius >= this.canvasWidth || this.ballX - radius <= 0) {
-      this.ballXSpeed = -this.ballXSpeed;
-    } else if (this.ballY - radius <= 0) {
-      this.ballYSpeed = -this.ballYSpeed;
+    } else if (this.ball.x + radius >= this.canvasWidth || this.ball.x - radius <= 0) {
+      this.ball.xSpeed = -this.ball.xSpeed;
+    } else if (this.ball.y - radius <= 0) {
+      this.ball.ySpeed = -this.ball.ySpeed;
     }
-    this.ballX += this.ballXSpeed;
-    this.ballY += this.ballYSpeed;
+    this.ball.x += this.ball.xSpeed;
+    this.ball.y += this.ball.ySpeed;
   }
 
   updatePaddlePos(event: MouseEvent) {
-    this.PADDLE_X = Math.floor(event.clientX);
+    this.paddle.x = Math.floor(event.clientX);
   }
 }
 
@@ -152,20 +148,51 @@ class Bricks {
         count += 1;
       }
     }
-    console.log("COUNT:", count);
+
     return count === 0;
   }
 }
 
+abstract class Sprite {
+  x!: number;
+  y!: number;
 
-class Brick {
-  x: number;
-  y: number;
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+  abstract draw(ctx: CanvasRenderingContext2D): void;
+}
+
+
+class Ball extends Sprite {
+  radius = 20;
+  xSpeed = 10;
+  ySpeed = 10;
+
+  override draw(ctx: CanvasRenderingContext2D): void {
+    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+  }
+}
+
+
+class Paddle extends Sprite {
+  static PADDLE_HEIGHT = 20;
+  static PADDLE_WIDTH = 300;
+
+  override draw(ctx: CanvasRenderingContext2D): void {
+    ctx.rect(this.x, this.y, Paddle.PADDLE_WIDTH, Paddle.PADDLE_HEIGHT);
+  }
+}
+
+
+class Brick extends Sprite {
   width;
   height;
   broken = false;
 
   constructor(x: number, y: number, width: number, height: number) {
+    super(x, y);
     this.x = x;
     this.y =y;
     this.width = width;
@@ -177,7 +204,6 @@ class Brick {
     const rightX = this.x + this.width;
     if (!this.broken && (ballX + radius >= this.x) && (ballX - radius <= rightX) && (ballY + radius >= this.y) && (ballY - radius <= bottomY)) {
       this.broken = true;
-      
       if (((ballX + radius >= this.x) &&  (ballX - radius < rightX)) || ((ballX + radius > this.x) &&  (ballX - radius <= rightX))) {
         return [1, -1];
       } else if(((ballY + radius >= this.y) && (ballY - radius <= bottomY)) || ((ballY + radius >= this.y) && (ballY - radius <= bottomY))) {
@@ -188,11 +214,11 @@ class Brick {
     return [1, 1];
   }
 
-  draw(ctx: any) {
+  override draw(ctx: CanvasRenderingContext2D) {
     ctx.rect(this.x, this.y, this.width, this.height)
   }
 
-  clear(ctx: any) {
+  clear(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(this.x, this.y, this.width, this.height)
   }
 }
