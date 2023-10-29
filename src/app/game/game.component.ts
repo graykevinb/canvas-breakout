@@ -22,10 +22,10 @@ export class GameComponent implements AfterViewInit {
   ballX = 0;
   ballY = 0;
 
-  ballXSpeed = 5;
-  ballYSpeed = 5;
+  ballXSpeed = 10;
+  ballYSpeed = 10;
 
-  bricks = new Bricks(5, 15);
+  bricks!: Bricks;
 
   ngAfterViewInit(): void {
 
@@ -33,6 +33,8 @@ export class GameComponent implements AfterViewInit {
 
     this.canvasWidth = this.pongCanvas.getBoundingClientRect().width;
     this.canvasHeight = this.pongCanvas.getBoundingClientRect().height;
+
+    this.bricks = new Bricks(3, 10, this.canvasWidth);
   
     this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
 
@@ -71,7 +73,9 @@ export class GameComponent implements AfterViewInit {
     let i: any;
     for (i in b_list) {
       const brick = b_list[i];
-      brick.collide(this.ballX, this.ballY, radius);
+      let vector = brick.collide(this.ballX, this.ballY, radius);
+      this.ballXSpeed *= vector[0];
+      this.ballYSpeed *= vector[1];
       if(!brick.broken) {
         brick.draw(context);
       } else {
@@ -87,8 +91,6 @@ export class GameComponent implements AfterViewInit {
 
     window.requestAnimationFrame(() => this.updateGame(canvas, context));
   }
-
-
 
   private updateBallPos(radius: number) {
     if ((this.ballY >= this.canvasHeight - this.PADDLE_HEIGHT - radius) && 
@@ -117,11 +119,13 @@ class Bricks {
   width = 100;
   height = 50;
 
-  constructor(rows: number, cols: number) {
+  constructor(rows: number, cols: number, gameWidth: number) {
+    const padding = 10;
+    this.width = gameWidth/cols - padding;
     this.bricks = [];
     for (let r=0;r<=rows;r++) {
       for (let c=0;c<=cols;c++) {
-        this.bricks.push(new Brick(c*(this.width+10), r*(this.height+10), this.width, this.height))
+        this.bricks.push(new Brick(c*(this.width+padding), r*(this.height+padding), this.width, this.height))
       }
     } 
   }
@@ -142,14 +146,20 @@ class Brick {
     this.height = height;
   }
 
-  collide(ballX: number, ballY: number, radius: number): boolean {
+  collide(ballX: number, ballY: number, radius: number): [number, number] {
     const bottomY = this.y+ this.height;
     const rightX = this.x + this.width;
-    if ((ballX + radius >= this.x) && (ballX - radius <= rightX) && (ballY + radius >= this.y) && (ballY - radius <= bottomY)) {
+    if (!this.broken && (ballX + radius >= this.x) && (ballX - radius <= rightX) && (ballY + radius >= this.y) && (ballY - radius <= bottomY)) {
       this.broken = true;
-      return true;
+      
+      if (((ballX + radius >= this.x) &&  (ballX - radius < rightX)) || ((ballX + radius > this.x) &&  (ballX - radius <= rightX))) {
+        return [1, -1];
+      } else if(((ballY + radius >= this.y) && (ballY - radius <= bottomY)) || ((ballY + radius >= this.y) && (ballY - radius <= bottomY))) {
+        return [-1, 1];      
+      }
+      return [-1, -1];
     }
-    return false;
+    return [1, 1];
   }
 
   draw(ctx: any) {
