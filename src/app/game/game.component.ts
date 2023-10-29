@@ -9,10 +9,10 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 export class GameComponent implements AfterViewInit {
 
   @ViewChild('pongCanvas', { static: false }) ballCanvasRef!: ElementRef;
-  pongCanvas: any = this.ballCanvasRef.nativeElement;
+  pongCanvas: any = undefined;
 
-  canvasWidth = this.pongCanvas.getBoundingClientRect().width;
-  canvasHeight = this.pongCanvas.getBoundingClientRect().height;
+  canvasWidth = 0
+  canvasHeight = 0
 
   PADDLE_HEIGHT = 20;
   PADDLE_WIDTH = 300;
@@ -26,6 +26,14 @@ export class GameComponent implements AfterViewInit {
   ballYSpeed = 10;
 
   ngAfterViewInit(): void {
+
+    this.pongCanvas = this.ballCanvasRef.nativeElement;
+
+    this.canvasWidth = this.pongCanvas.getBoundingClientRect().width;
+    this.canvasHeight = this.pongCanvas.getBoundingClientRect().height;
+  
+    this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
+  
 
     const dpr = window.devicePixelRatio || 1;
   
