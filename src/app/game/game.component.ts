@@ -16,16 +16,16 @@ export class GameComponent implements AfterViewInit {
 
   PADDLE_HEIGHT = 20;
   PADDLE_WIDTH = 300;
-  PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
+  PADDLE_Y = 0;
   PADDLE_X = 0;
 
-  ballX = 30;
-  ballY = 30;
+  ballX = 0;
+  ballY = 0;
 
-  ballXSpeed = 10;
-  ballYSpeed = 10;
+  ballXSpeed = 5;
+  ballYSpeed = 5;
 
-  bricks = new Bricks(10, 15);
+  bricks = new Bricks(5, 15);
 
   ngAfterViewInit(): void {
 
@@ -35,6 +35,9 @@ export class GameComponent implements AfterViewInit {
     this.canvasHeight = this.pongCanvas.getBoundingClientRect().height;
   
     this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
+
+    this.ballX = this.canvasWidth/2;
+    this.ballY = this.canvasHeight/2;
   
     const dpr = window.devicePixelRatio || 1;
   
