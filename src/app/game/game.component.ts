@@ -116,10 +116,11 @@ class Bricks {
 
   constructor(rows: number, cols: number) {
     this.bricks = [];
-    for (let c=0;c<=cols;c++) {
-      this.bricks.push(new Brick(c*(this.width+10), 10, this.width, this.height))
-    }
-    console.log(this.bricks); 
+    for (let r=0;r<=rows;r++) {
+      for (let c=0;c<=cols;c++) {
+        this.bricks.push(new Brick(c*(this.width+10), r*(this.height+10), this.width, this.height))
+      }
+    } 
   }
 }
 
