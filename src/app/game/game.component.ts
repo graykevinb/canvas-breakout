@@ -25,6 +25,9 @@ export class GameComponent implements AfterViewInit {
   ballXSpeed = 10;
   ballYSpeed = 10;
 
+  GAMEOVER = false;
+  WON = false;
+
   bricks!: Bricks;
 
   ngAfterViewInit(): void {
@@ -34,7 +37,7 @@ export class GameComponent implements AfterViewInit {
     this.canvasWidth = this.pongCanvas.getBoundingClientRect().width;
     this.canvasHeight = this.pongCanvas.getBoundingClientRect().height;
 
-    this.bricks = new Bricks(3, 10, this.canvasWidth);
+    this.bricks = new Bricks(3,10, this.canvasWidth);
   
     this.PADDLE_Y = this.canvasHeight - this.PADDLE_HEIGHT;
 
@@ -65,31 +68,41 @@ export class GameComponent implements AfterViewInit {
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.beginPath();
     context.fillStyle = 'white';
+    if (!this.GAMEOVER && !this.bricks.empty()) {
+      console.log(this.bricks.empty());
+      const radius = 20;
+      this.updateBallPos(radius);
 
-    const radius = 20;
-    this.updateBallPos(radius);
-
-    let b_list: Array<Brick> = this.bricks.bricks;
-    let i: any;
-    for (i in b_list) {
-      const brick = b_list[i];
-      let vector = brick.collide(this.ballX, this.ballY, radius);
-      this.ballXSpeed *= vector[0];
-      this.ballYSpeed *= vector[1];
-      if(!brick.broken) {
-        brick.draw(context);
-      } else {
-        brick.clear(context);
+      let b_list: Array<Brick> = this.bricks.bricks;
+      let i: any;
+      for (i in b_list) {
+        const brick = b_list[i];
+        let vector = brick.collide(this.ballX, this.ballY, radius);
+        this.ballXSpeed *= vector[0];
+        this.ballYSpeed *= vector[1];
+        if(!brick.broken) {
+          brick.draw(context);
+        } else {
+          brick.clear(context);
+        }
       }
+      // Draw Ball
+      context.arc(this.ballX, this.ballY, radius, 0, 2*Math.PI);
+
+      //Update paddle position
+      context.rect(this.PADDLE_X, this.PADDLE_Y, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+      context.fill();
+
+      window.requestAnimationFrame(() => this.updateGame(canvas, context));
+    } else if(this.GAMEOVER) {
+      context.font = "200px mono";
+      context.textAlign = "center";
+      context.fillText("GAMEOVER!", this.canvasWidth/2, this.canvasHeight/2);
+    } else if(this.bricks.empty()) {
+      context.font = "200px mono";
+      context.textAlign = "center";
+      context.fillText("YOU WON!", this.canvasWidth/2, this.canvasHeight/2);
     }
-    // Draw Ball
-    context.arc(this.ballX, this.ballY, radius, 0, 2*Math.PI);
-
-    //Update paddle position
-    context.rect(this.PADDLE_X, this.PADDLE_Y, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-    context.fill();
-
-    window.requestAnimationFrame(() => this.updateGame(canvas, context));
   }
 
   private updateBallPos(radius: number) {
@@ -100,6 +113,7 @@ export class GameComponent implements AfterViewInit {
     } else if (this.ballY + radius >= this.canvasHeight) {
       this.ballXSpeed = 0;
       this.ballYSpeed = 0;
+      this.GAMEOVER = true;
     } else if (this.ballX + radius >= this.canvasWidth || this.ballX - radius <= 0) {
       this.ballXSpeed = -this.ballXSpeed;
     } else if (this.ballY - radius <= 0) {
@@ -123,11 +137,23 @@ class Bricks {
     const padding = 10;
     this.width = gameWidth/cols - padding;
     this.bricks = [];
-    for (let r=0;r<=rows;r++) {
-      for (let c=0;c<=cols;c++) {
+    for (let r=0;r<=rows-1;r++) {
+      for (let c=0;c<=cols-1;c++) {
         this.bricks.push(new Brick(c*(this.width+padding), r*(this.height+padding), this.width, this.height))
       }
-    } 
+    }
+
+  }
+
+  empty(): boolean {
+    let count = 0;
+    for (let b in this.bricks) {
+      if(!this.bricks[b].broken) {
+        count += 1;
+      }
+    }
+    console.log("COUNT:", count);
+    return count === 0;
   }
 }
 
